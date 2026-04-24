@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<title>Vale Sombrio — PWA v7</title>
+<meta name="theme-color" content="#070b14" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Vale Sombrio" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<style>
+:root{
+  --bg:#070b14; --panel:#0b1120; --panel2:#10192d; --line:rgba(154,184,255,.16);
+  --text:#eef4ff; --muted:#9eabc4; --accent:#ff4d88; --accent2:#7fe7ff; --good:#8cf1a8;
+  --shadow:0 18px 46px rgba(0,0,0,.42);
+  --radius:26px; --safe-top:env(safe-area-inset-top); --safe-bottom:env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%; margin:0; background:radial-gradient(circle at top,#0d1730 0%,#070b14 38%,#04070d 100%); color:var(--text); font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; touch-action:manipulation;}
+button,input{font:inherit;}
+#app{min-height:100%;}
+.screen{display:none; min-height:100vh; padding:calc(18px + var(--safe-top)) 16px calc(18px + var(--safe-bottom)); position:relative; overflow:hidden;}
+.screen.active{display:block;}
+.backdrop{position:absolute; inset:0; background:radial-gradient(circle at 20% 10%,rgba(127,231,255,.11),transparent 28%),radial-gradient(circle at 82% 15%,rgba(255,77,136,.08),transparent 24%),linear-gradient(180deg,rgba(10,15,27,.0),rgba(7,11,20,.65) 30%,rgba(7,11,20,.96)); pointer-events:none;}
+.wrap{position:relative; z-index:1; max-width:520px; margin:0 auto;}
+.hero-card,.panel,.scene-card,.choice-card{background:linear-gradient(180deg,rgba(12,18,33,.95),rgba(8,12,23,.95)); border:1px solid var(--line); border-radius:28px; box-shadow:var(--shadow);}
+.hero-card{padding:24px 20px;}
+.kicker{font-size:12px; letter-spacing:.28em; text-transform:uppercase; color:#b8c6e5; opacity:.88;}
+.title{font-size:clamp(36px,8vw,52px); margin:10px 0 10px; line-height:.92; letter-spacing:-.03em;}
+.subtitle{font-size:16px; line-height:1.5; color:#dbe6ff; margin:0;}
+.story-block{margin-top:16px; padding:16px; border-radius:22px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); color:#d4def4; line-height:1.6;}
+.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px;}
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:54px; padding:14px 16px; width:100%; border-radius:20px; border:1px solid rgba(255,255,255,.08); color:var(--text); background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03)); box-shadow:0 8px 22px rgba(0,0,0,.18); cursor:pointer;}
+.btn.primary{background:linear-gradient(180deg,#ff5b95,#ef2e74); border:none; color:white; font-weight:700;}
+.btn.secondary{background:linear-gradient(180deg,rgba(127,231,255,.14),rgba(127,231,255,.06)); border:1px solid rgba(127,231,255,.18);}
+.btn.small{min-height:44px; border-radius:16px; padding:10px 14px; width:auto;}
+.list{display:grid; gap:10px; margin-top:16px;}
+.card-row{display:flex; gap:12px; align-items:flex-start; padding:14px; border-radius:22px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06);}
+.card-row .icon{width:44px; height:44px; border-radius:14px; display:grid; place-items:center; font-size:22px; background:rgba(255,255,255,.06); flex:none;}
+.header{display:flex; align-items:center; gap:12px; margin-bottom:14px;}
+.header .meta{flex:1;}
+.header h2{margin:0; font-size:18px;}
+.header p{margin:4px 0 0; color:var(--muted);}
+.icon-btn{width:52px; height:52px; border-radius:20px; border:1px solid var(--line); background:rgba(255,255,255,.03); display:grid; place-items:center; color:var(--text); cursor:pointer;}
+.icon-btn.right{margin-left:auto;}
+.mode-chip{display:inline-flex; padding:8px 12px; border-radius:999px; border:1px solid rgba(127,231,255,.18); background:rgba(127,231,255,.08); color:#d4f6ff; font-size:12px; margin-top:8px;}
+.scene-card{padding:12px; overflow:hidden;}
+.scene-shell{position:relative; width:100%; border-radius:24px; overflow:hidden; border:1px solid rgba(255,255,255,.06); background:#05070c;}
+.scene-shell img{width:100%; display:block; user-select:none; pointer-events:none;}
+.scene-shell.vertical img{aspect-ratio:9/16; object-fit:cover;}
+.scene-overlay{position:absolute; inset:0;}
+.hotspot{position:absolute; border-radius:20px; border:1px solid rgba(255,255,255,.18); background:radial-gradient(circle,rgba(255,212,102,.24),rgba(255,170,0,.10) 40%,rgba(255,170,0,0) 70%); box-shadow:0 0 0 1px rgba(255,255,255,.02) inset; cursor:pointer;}
+.hotspot::after{content:''; position:absolute; inset:22%; border-radius:999px; background:radial-gradient(circle,rgba(255,221,111,.95),rgba(255,198,70,.15) 60%,transparent 72%); filter:blur(2px); animation:pulse 2.2s infinite; opacity:.68;}
+.hotspot.subtle{border-color:rgba(255,255,255,.10); background:radial-gradient(circle,rgba(255,212,102,.14),rgba(255,170,0,.05) 44%,rgba(255,170,0,0) 74%);}
+.hotspot:active{transform:scale(.98);}
+@keyframes pulse{0%,100%{transform:scale(.95); opacity:.55;}50%{transform:scale(1.06); opacity:.9;}}
+.utility-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px;}
+.utility-btn{min-height:74px; border-radius:22px; padding:12px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:6px; text-align:center;}
+.utility-btn span{font-size:13px; color:#c6d0e8;}
+.status{margin-top:12px; padding:14px 16px; border-radius:18px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); color:#d4def4;}
+.inventory-list,.journal-list{display:grid; gap:10px; margin-top:14px;}
+.inventory-item,.journal-item{padding:14px; border-radius:18px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06);}
+.inventory-item small,.journal-item small{display:block; color:var(--muted); margin-top:6px;}
+.modal{position:fixed; inset:0; background:rgba(3,5,10,.72); backdrop-filter:blur(10px); display:none; align-items:flex-end; justify-content:center; z-index:40; padding:14px;}
+.modal.active{display:flex;}
+.modal-card{width:min(100%,520px); max-height:88vh; overflow:auto; border-radius:28px; background:linear-gradient(180deg,rgba(10,16,29,.98),rgba(6,10,18,.98)); border:1px solid var(--line); box-shadow:var(--shadow);}
+.modal-head{display:flex; align-items:center; gap:10px; padding:18px 18px 14px; position:sticky; top:0; background:linear-gradient(180deg,rgba(10,16,29,.98),rgba(10,16,29,.88)); backdrop-filter:blur(8px); z-index:2;}
+.modal-head h3{margin:0; font-size:18px; flex:1;}
+.modal-body{padding:0 18px 18px;}
+.modal-figure{width:100%; border-radius:24px; overflow:hidden; border:1px solid rgba(255,255,255,.06); background:#04060a; margin-bottom:14px;}
+.modal-figure img{display:block; width:100%;}
+.object-text{line-height:1.6; color:#e6ecff;}
+.object-text p{margin:0 0 12px;}
+.tag{display:inline-flex; align-items:center; gap:6px; padding:7px 10px; border-radius:999px; font-size:12px; color:#ccefff; border:1px solid rgba(127,231,255,.16); background:rgba(127,231,255,.08); margin-bottom:12px;}
+.code-panel{display:grid; gap:12px;}
+.code-box{display:flex; gap:10px; justify-content:center; margin:8px 0 4px;}
+.code-digit{width:58px; height:62px; border-radius:16px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.04); display:grid; place-items:center; font-size:28px; font-weight:700;}
+.keypad{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.key{min-height:56px; border-radius:18px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.04); color:white; cursor:pointer;}
+.notice{padding:12px 14px; border-radius:16px; background:rgba(255,255,255,.04); color:#d9e2fa; border:1px solid rgba(255,255,255,.06);}
+.notice.success{background:rgba(140,241,168,.08); border-color:rgba(140,241,168,.22); color:#d9ffe4;}
+.notice.error{background:rgba(255,91,149,.08); border-color:rgba(255,91,149,.22); color:#ffdbe7;}
+.ending-options{display:grid; gap:10px; margin-top:14px;}
+.ending-card{padding:14px; border-radius:20px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06);}
+.footer-space{height:8px;}
+.bottom-note{margin-top:12px; text-align:center; color:#95a5c8; font-size:12px;}
+.hidden{display:none !important;}
+.fade-up{animation:fadeUp .35s ease;}
+@keyframes fadeUp{from{opacity:0; transform:translateY(18px);}to{opacity:1; transform:none;}}
+</style>
+</head>
+<body>
+<div id="app">
+  <section class="screen active" id="screen-home">
+    <div class="backdrop"></div>
+    <div class="wrap fade-up">
+      <div class="hero-card">
+        <div class="kicker">Projeto PWA • Capítulo 1</div>
+        <div class="title">Vale<br>Sombrio</div>
+        <p class="subtitle">Um point-and-click investigativo para celular, agora com opção <strong>solo</strong> ou <strong>coop local</strong>, clima sobrenatural e progressão mais imersiva.</p>
+        <div class="story-block">
+          <strong>Prólogo</strong><br>
+          Durante uma chuva elétrica, a última locadora da cidade mantém a vitrine acesa mesmo após o fechamento. Um sinal de origem desconhecida atravessa a noite e liga, ao mesmo tempo, a <strong>Locadora Neon</strong> e um <strong>bunker de monitoramento</strong> escondido sob Vale Sombrio.<br><br>
+          Quem entra na locadora encontra objetos estranhamente posicionados. Quem observa do bunker capta frequências, padrões e mensagens incompletas. Separados, vocês só veem metade do enigma. Juntos, podem abrir o cofre — ou despertar algo pior.
+        </div>
+        <div class="grid-2">
+          <button class="btn primary" data-action="start-solo">🎮 Jogar solo</button>
+          <button class="btn secondary" data-action="goto-role-select">🤝 Coop local</button>
+        </div>
+        <div class="list">
+          <div class="card-row"><div class="icon">🧩</div><div><strong>Capítulo 1 — Locadora Neon</strong><br><span style="color:var(--muted)">Objetivo: descobrir o código do cofre e escolher o destino da fita.</span></div></div>
+          <div class="card-row"><div class="icon">📱</div><div><strong>Formato para celular</strong><br><span style="color:var(--muted)">PWA instalável, offline após carregamento, com foco em toque confiável e telas curtas.</span></div></div>
+          <div class="card-row"><div class="icon">🌩️</div><div><strong>Nova direção</strong><br><span style="color:var(--muted)">Sem aba de dicas. As pistas surgem da cena, do caderno e da cooperação.</span></div></div>
+        </div>
+      </div>
+      <div class="bottom-note">v7 • PWA instalável • locadora cinematográfica</div>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-role-select">
+    <div class="backdrop"></div>
+    <div class="wrap fade-up">
+      <div class="header">
+        <button class="icon-btn" data-action="home">←</button>
+        <div class="meta"><h2>Escolher papel</h2><p>Coop local • cada celular fica com um papel.</p></div>
+      </div>
+      <div class="panel" style="padding:18px;">
+        <div class="choice-card" style="padding:18px; margin-bottom:12px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06);">
+          <strong>👣 Investigador</strong>
+          <p style="margin:8px 0 0; color:var(--muted); line-height:1.55;">Explora a Locadora Neon, encontra valores escondidos, observa a posição dos objetos e abre o cofre.</p>
+          <button class="btn primary" style="margin-top:12px;" data-action="start-coop-investigador">Entrar como Investigador</button>
+        </div>
+        <div class="choice-card" style="padding:18px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06);">
+          <strong>🛰️ Técnico</strong>
+          <p style="margin:8px 0 0; color:var(--muted); line-height:1.55;">Fica no bunker, estabiliza sinais, identifica a ordem da transmissão e compara com quem está na locadora.</p>
+          <button class="btn secondary" style="margin-top:12px;" data-action="start-coop-tecnico">Entrar como Técnico</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-investigator">
+    <div class="backdrop"></div>
+    <div class="wrap fade-up">
+      <div class="header">
+        <button class="icon-btn" data-action="back-home">←</button>
+        <div class="meta">
+          <h2>Locadora Neon</h2>
+          <p id="investigator-subtitle">Objetivo: descobrir o código do cofre</p>
+          <div class="mode-chip" id="investigator-mode-chip">Modo solo</div>
+        </div>
+        <button class="icon-btn right" data-open-utility="objective">🎯</button>
+      </div>
+      <div class="scene-card">
+        <div class="scene-shell" id="scene-investigator">
+          <img src="locadora-neon-cinematica.webp" alt="Interior da Locadora Neon" />
+          <div class="scene-overlay" id="overlay-investigator"></div>
+        </div>
+      </div>
+      <div class="utility-grid">
+        <button class="btn utility-btn" data-open-utility="inventory">🎒 <strong>Inventário</strong><span>Itens coletados</span></button>
+        <button class="btn utility-btn" data-open-utility="journal">🗒️ <strong>Caderno</strong><span>Anotações</span></button>
+        <button class="btn utility-btn" data-open-utility="map">🗺️ <strong>Mapa</strong><span>Vale Sombrio</span></button>
+      </div>
+      <div class="status" id="investigator-status">Explore a cena. Toque nos brilhos discretos para examinar os objetos.</div>
+      <div class="footer-space"></div>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-technician">
+    <div class="backdrop"></div>
+    <div class="wrap fade-up">
+      <div class="header">
+        <button class="icon-btn" data-action="back-role">←</button>
+        <div class="meta">
+          <h2>Estação Técnica</h2>
+          <p>Bunker sobrenatural retrô • coop local</p>
+          <div class="mode-chip">Papel: Técnico</div>
+        </div>
+        <button class="icon-btn right" data-open-tech-utility="objective">⚙️</button>
+      </div>
+      <div class="scene-card">
+        <div class="scene-shell vertical" id="scene-technician">
+          <img src="tecnico-bunker.webp" alt="Bunker técnico de Vale Sombrio" />
+          <div class="scene-overlay" id="overlay-technician"></div>
+        </div>
+      </div>
+      <div class="utility-grid">
+        <button class="btn utility-btn" data-open-tech-utility="journal">🗒️ <strong>Caderno</strong><span>Sinais registrados</span></button>
+        <button class="btn utility-btn" data-open-tech-utility="map">🗺️ <strong>Mapa</strong><span>Setores da cidade</span></button>
+        <button class="btn utility-btn" data-open-tech-utility="sync">🔗 <strong>Sincronia</strong><span>Troque pistas</span></button>
+      </div>
+      <div class="status" id="technician-status">Do bunker, você lê a ordem da transmissão. Compare com o que o Investigador encontrar na locadora.</div>
+      <div class="footer-space"></div>
+    </div>
+  </section>
+</div>
+
+<div class="modal" id="modal-generic"><div class="modal-card"><div class="modal-head"><h3 id="modal-title">Detalhe</h3><button class="icon-btn small" id="modal-close">✕</button></div><div class="modal-body" id="modal-body"></div></div></div>
+<div class="modal" id="modal-safe"><div class="modal-card"><div class="modal-head"><h3>Decifrar o cofre</h3><button class="icon-btn small" id="safe-close">✕</button></div><div class="modal-body"><div class="tag">🔐 Cofre do balcão</div><div class="code-panel"><div class="notice" id="safe-note">Digite o código de 4 dígitos.</div><div class="code-box" id="code-box"></div><div class="keypad" id="keypad"></div></div></div></div></div>
+<div class="modal" id="modal-ending"><div class="modal-card"><div class="modal-head"><h3 id="ending-title">O cofre abriu</h3><button class="icon-btn small" id="ending-close">✕</button></div><div class="modal-body" id="ending-body"></div></div></div>
+
+<script>
+const IMAGES = {"scene": "locadora-neon-cinematica.webp", "map": "mapa-vale-sombrio.webp", "vhs": "obj-vhs.webp", "poster": "obj-poster.webp", "arcade": "obj-arcade.webp", "phone": "obj-telefone.webp", "safe": "obj-cofre.webp", "radio": "tec-radio.webp", "terminal": "tec-terminal.webp", "board": "tec-quadro.webp"};
+const state = {
+  mode:'solo',
+  role:'investigador',
+  found:[],
+  journal:[],
+  code:'',
+  safeOpen:false,
+  ending:null
+};
+
+const investigatorHotspots = [
+  {id:'vhs', label:'Estante VHS', x:26.2, y:20.8, w:28.5, h:44.2},
+  {id:'arcade', label:'Fliperama', x:62.8, y:24.2, w:14.4, h:31.8},
+  {id:'poster', label:'Pôster', x:79.2, y:11.6, w:15.2, h:43.8},
+  {id:'phone', label:'Telefone', x:58.2, y:47.4, w:10.4, h:12.6},
+  {id:'safe', label:'Cofre', x:72.4, y:58.3, w:13.6, h:21.2}
+];
+
+const techHotspots = [
+  {id:'radio', label:'Rádio corrompido', x:11, y:28.5, w:28, h:16},
+  {id:'terminal', label:'Terminal antigo', x:54, y:34, w:27, h:18},
+  {id:'board', label:'Quadro de investigação', x:14, y:57, w:34, h:18},
+  {id:'map', label:'Mapa de setores', x:59, y:59, w:24, h:16}
+];
+
+const investigatorData = {
+  solo: {
+    vhs: {title:'Estante VHS', image:IMAGES.vhs, tag:'Pista física', text:`As fitas de destaque foram reposicionadas e cada uma carrega um valor escrito a caneta na lombada:<br><br><strong>NIGHT = 1</strong><br><strong>GHOST = 8</strong><br><strong>STATIC = 7</strong><br><strong>SIGNAL = 9</strong><br><br>Alguém queria transformar nomes em números.` , journal:'Na estante VHS: NIGHT=1, GHOST=8, STATIC=7, SIGNAL=9.'},
+    arcade: {title:'Fliperama', image:IMAGES.arcade, tag:'Observação', text:`O reflexo do vidro revela quatro palavras riscadas com setas, como se fossem uma ordem de exibição:<br><br><strong>NIGHT → GHOST → STATIC → SIGNAL</strong><br><br>O fliperama confirma que os nomes não são aleatórios.` , journal:'O fliperama sugere a ordem NIGHT → GHOST → STATIC → SIGNAL.'},
+    poster: {title:'Pôster da vitrine', image:IMAGES.poster, tag:'Cena', text:`O pôster antigo da sessão de terror está rasgado, mas ainda mostra a frase: <em>“A sessão correta segue a sequência da noite.”</em><br><br>É uma confirmação visual de que existe uma ordem a seguir.` , journal:'O pôster reforça que há uma sequência correta para a sessão.'},
+    phone: {title:'Telefone do balcão', image:IMAGES.phone, tag:'Recado', text:`Ao erguer o telefone, você escuta uma gravação falhada: <em>“ordem estável... noite... fantasma... estática... sinal...”</em><br><br>A gravação repete a mesma sequência do resto da cena.` , journal:'O telefone repete a ordem: NIGHT, GHOST, STATIC, SIGNAL.'},
+    safe: {title:'Cofre do balcão', image:IMAGES.safe, tag:'Bloqueado', text:`O cofre possui um teclado de quatro dígitos. Se você já entendeu a relação entre <strong>nomes</strong>, <strong>ordem</strong> e <strong>valores</strong>, pode tentar abri-lo agora.`}
+  },
+  coop: {
+    vhs: {title:'Estante VHS', image:IMAGES.vhs, tag:'Pista física', text:`As fitas foram marcadas com valores na lombada. Você anota rapidamente:<br><br><strong>NIGHT = 1</strong><br><strong>GHOST = 8</strong><br><strong>STATIC = 7</strong><br><strong>SIGNAL = 9</strong><br><br>Sozinho, isso ainda não resolve o enigma. Talvez outra pessoa tenha a ordem.` , journal:'Na locadora: NIGHT=1, GHOST=8, STATIC=7, SIGNAL=9.'},
+    arcade: {title:'Fliperama', image:IMAGES.arcade, tag:'Ruído visual', text:`O fliperama permanece aceso mesmo desligado. A tela só mostra um brilho azul pulsando. Há algo estranho aqui, mas não a solução completa.` , journal:'O fliperama reage ao sinal, mas não entrega a ordem.'},
+    poster: {title:'Pôster da vitrine', image:IMAGES.poster, tag:'Ambiente', text:`O pôster está úmido e parcialmente rasgado. Atrás dele, você encontra a palavra “SESSÃO” escrita com tinta fluorescente.` , journal:'O pôster sugere que os nomes fazem parte de uma sessão ou sequência.'},
+    phone: {title:'Telefone do balcão', image:IMAGES.phone, tag:'Mensagem', text:`Uma voz metálica sussurra: <em>“Os valores estão na locadora. A ordem vem da frequência.”</em><br><br>Isso confirma que alguém no outro dispositivo precisará completar o enigma com você.` , journal:'O telefone confirma: valores aqui, ordem na frequência.'},
+    safe: {title:'Cofre do balcão', image:IMAGES.safe, tag:'Bloqueado', text:`O cofre espera um código de 4 dígitos. No modo coop, você depende da <strong>ordem da transmissão</strong>, que está com o Técnico.`}
+  }
+};
+
+const techData = {
+  radio: {title:'Rádio corrompido', image:IMAGES.radio, tag:'Transmissão', text:`Depois de estabilizar o chiado, a transmissão repete sempre a mesma sequência de nomes:<br><br><strong>NIGHT → GHOST → STATIC → SIGNAL</strong><br><br>Você acaba de descobrir a ordem da sessão.` , journal:'No bunker: a ordem é NIGHT → GHOST → STATIC → SIGNAL.'},
+  terminal: {title:'Terminal antigo', image:IMAGES.terminal, tag:'Leitura técnica', text:`No monitor fosco, um aviso aparece e some: <em>“O Investigador possui os valores. O Técnico possui a ordem.”</em><br><br>O terminal deixa claro como as duas metades do enigma se encaixam.` , journal:'O terminal confirma a divisão do enigma entre Investigador e Técnico.'},
+  board: {title:'Quadro de investigação', image:IMAGES.board, tag:'Correlação', text:`Fotos, recortes e fios vermelhos ligam a locadora ao bunker. Uma anotação sublinhada diz: <em>“Não leiam como lista; leiam como sequência.”</em>` , journal:'O quadro reforça que os nomes devem ser lidos em sequência.'},
+  map: {title:'Mapa dos setores', image:IMAGES.map, tag:'Setores de Vale Sombrio', text:`O mapa marca a <strong>Locadora Neon</strong>, a antiga <strong>Aurora Labs</strong> e um círculo ao redor da área conhecida como <strong>Zona Invertida</strong>. Se a fita do cofre for reproduzida, o sinal pode se espalhar.` , journal:'O mapa indica que a fita pode afetar a Zona Invertida.'}
+};
+
+const endings = {
+  seal: {title:'Final — O Sinal Selado', text:`Você fecha a fita em um invólucro blindado e desliga a alimentação do cofre. O bunker perde o ruído aos poucos, e Vale Sombrio amanhece silenciosa.<br><br><strong>Consequência:</strong> vocês contiveram o sinal. O mistério permanece, mas a cidade sobrevive intacta.`},
+  play: {title:'Final — Eco na Chuva', text:`Vocês colocam a fita para tocar. Por um segundo, toda a cidade pisca ao mesmo tempo. A vitrine da locadora reflete uma rua que não existe. O bunker registra uma nova frequência — e o sinal agora está vivo.<br><br><strong>Consequência:</strong> vocês despertaram algo maior. O capítulo termina, mas o fenômeno cresce.`}
+};
+
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const screens = ['home','role-select','investigator','technician'];
+
+function saveState() {
+  try { localStorage.setItem('valeSombrioV6', JSON.stringify(state)); } catch(e){}
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem('valeSombrioV6');
+    if(raw) Object.assign(state, JSON.parse(raw));
+  } catch(e){}
+}
+function showScreen(name) {
+  screens.forEach(id => $('#screen-'+id).classList.toggle('active', id===name));
+}
+function setMode(mode, role='investigador') {
+  state.mode = mode; state.role = role; saveState();
+  $('#investigator-mode-chip').textContent = mode==='solo' ? 'Modo solo' : 'Coop local • Investigador';
+  $('#investigator-subtitle').textContent = mode==='solo' ? 'Objetivo: descobrir o código do cofre' : 'Objetivo: descobrir o código com ajuda do Técnico';
+}
+function uniquePush(arr, value) { if(!arr.includes(value)) arr.push(value); }
+function addJournal(text) { uniquePush(state.journal, text); saveState(); }
+function collectItem(id, label) { uniquePush(state.found, id); saveState(); refreshStatus(); }
+
+function renderHotspots(container, items, handler) {
+  container.innerHTML = '';
+  items.forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'hotspot subtle';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', item.label);
+    btn.style.left = item.x + '%';
+    btn.style.top = item.y + '%';
+    btn.style.width = item.w + '%';
+    btn.style.height = item.h + '%';
+    btn.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); handler(item.id); }, {passive:false});
+    btn.addEventListener('pointerup', ev => { ev.preventDefault(); ev.stopPropagation(); handler(item.id); }, {passive:false});
+    container.appendChild(btn);
+  });
+}
+
+function openModal(title, bodyHtml) {
+  $('#modal-title').innerHTML = title;
+  $('#modal-body').innerHTML = bodyHtml;
+  $('#modal-generic').classList.add('active');
+}
+function closeModal() { $('#modal-generic').classList.remove('active'); }
+
+function getInvestigatorPack() { return state.mode === 'solo' ? investigatorData.solo : investigatorData.coop; }
+
+function openInvestigatorObject(id) {
+  if(id === 'safe') return openSafe();
+  const obj = getInvestigatorPack()[id];
+  if(!obj) return;
+  collectItem(id, obj.title);
+  if(obj.journal) addJournal(obj.journal);
+  const html = `
+    <div class="modal-figure"><img src="${obj.image}" alt="${obj.title}"></div>
+    <div class="tag">${obj.tag}</div>
+    <div class="object-text"><p>${obj.text}</p></div>
+    <button class="btn primary" onclick="document.getElementById('modal-generic').classList.remove('active')">Entendi</button>`;
+  openModal(obj.title, html);
+}
+
+function openTechObject(id) {
+  const obj = techData[id];
+  if(!obj) return;
+  collectItem('tech-'+id, obj.title);
+  if(obj.journal) addJournal(obj.journal);
+  const html = `
+    <div class="modal-figure"><img src="${obj.image}" alt="${obj.title}"></div>
+    <div class="tag">${obj.tag}</div>
+    <div class="object-text"><p>${obj.text}</p></div>
+    <button class="btn primary" onclick="document.getElementById('modal-generic').classList.remove('active')">Entendi</button>`;
+  openModal(obj.title, html);
+}
+
+function refreshStatus() {
+  const base = state.safeOpen
+    ? 'O cofre está aberto. Sua decisão final agora define o destino da fita.'
+    : (state.mode==='solo'
+      ? 'Solo: descubra a ordem e os valores para formar o código.'
+      : 'Coop: o Investigador possui os valores; o Técnico possui a ordem.');
+  $('#investigator-status').textContent = base;
+  $('#technician-status').textContent = 'No bunker, sua função é ler a ordem da transmissão e compará-la com as pistas da locadora.';
+}
+
+function utilityContent(kind, tech=false) {
+  if(kind==='objective') {
+    return { title: tech ? 'Missão do Técnico' : 'Objetivo atual', body: tech
+      ? `<div class="object-text"><p>Seu papel é decifrar a <strong>ordem da transmissão</strong> no bunker e repassar isso ao Investigador.</p><p>No capítulo 1, a solução completa exige combinar <strong>ordem</strong> + <strong>valores</strong>.</p></div><button class="btn primary" onclick="document.getElementById('modal-generic').classList.remove('active')">Fechar</button>`
+      : `<div class="object-text"><p>Explore a <strong>Locadora Neon</strong>, examine os objetos e descubra o <strong>código do cofre</strong>.</p><p>${state.mode==='solo' ? 'No modo solo, todas as pistas estão espalhadas na própria cena.' : 'No modo coop, você verá os valores aqui. A ordem correta está com o Técnico.'}</p></div><button class="btn primary" onclick="document.getElementById('modal-generic').classList.remove('active')">Fechar</button>` };
+  }
+  if(kind==='inventory') {
+    const pack = getInvestigatorPack();
+    const items = state.found.filter(x => pack[x]).map(id => `<div class="inventory-item"><strong>${pack[id].title}</strong><small>${pack[id].tag}</small></div>`).join('') || '<div class="inventory-item">Nenhum item relevante coletado ainda.</div>';
+    return { title:'Inventário', body:`<div class="inventory-list">${items}</div><button class="btn primary" style="margin-top:12px;" onclick="document.getElementById('modal-generic').classList.remove('active')">Fechar</button>` };
+  }
+  if(kind==='journal') {
+    const items = state.journal.map(text => `<div class="journal-item">${text}</div>`).join('') || '<div class="journal-item">Seu caderno ainda está vazio.</div>';
+    return { title:'Caderno', body:`<div class="journal-list">${items}</div><button class="btn primary" style="margin-top:12px;" onclick="document.getElementById('modal-generic').classList.remove('active')">Fechar</button>` };
+  }
+  if(kind==='map') {
+    return { title:'Mapa de Vale Sombrio', body:`<div class="modal-figure"><img src="${IMAGES.map}" alt="Mapa de Vale Sombrio"></div><div class="object-text"><p>A cidade conecta três pontos essenciais: <strong>Locadora Neon</strong>, <strong>Aurora Labs</strong> e a <strong>Zona Invertida</strong>. O capítulo 1 começa na locadora, mas o bunker já indica que o fenômeno se espalha pela cidade.</p></div><button class="btn primary" style="margin-top:8px;" onclick="document.getElementById('modal-generic').classList.remove('active')">Fechar</button>` };
+  }
+  if(kind==='sync') {
+    return { title:'Sincronia local', body:`<div class="object-text"><p>Para o <strong>coop local</strong>, cada pessoa joga no seu próprio celular.</p><p><strong>Investigador:</strong> encontra os valores dos nomes na locadora.</p><p><strong>Técnico:</strong> encontra a ordem correta no bunker.</p><p>Quando ambos compartilham essas pistas, o código do cofre pode ser montado.</p></div><button class="btn primary" onclick="document.getElementById('modal-generic').classList.remove('active')">Fechar</button>` };
+  }
+  return { title:'Informação', body:'<div class="object-text"><p>Nada por aqui.</p></div>' };
+}
+
+function openUtility(kind, tech=false) { const c = utilityContent(kind, tech); openModal(c.title, c.body); }
+
+function buildKeypad() {
+  const keypad = $('#keypad');
+  keypad.innerHTML = '';
+  ['1','2','3','4','5','6','7','8','9','←','0','OK'].forEach(key => {
+    const btn = document.createElement('button');
+    btn.className = 'key'; btn.textContent = key; btn.type = 'button';
+    btn.addEventListener('click', () => onKeyPress(key));
+    keypad.appendChild(btn);
+  });
+  renderCode();
+}
+function renderCode() {
+  const box = $('#code-box'); box.innerHTML = '';
+  const chars = (state.code || '').padEnd(4,'•').slice(0,4).split('');
+  chars.forEach(ch => { const el = document.createElement('div'); el.className='code-digit'; el.textContent=ch; box.appendChild(el); });
+}
+function onKeyPress(key) {
+  const note = $('#safe-note');
+  if(key==='←') { state.code = state.code.slice(0,-1); renderCode(); saveState(); return; }
+  if(key==='OK') {
+    if(state.code === '1879') {
+      state.safeOpen = true; saveState();
+      $('#modal-safe').classList.remove('active');
+      openEndingChoice();
+    } else {
+      note.className = 'notice error';
+      note.textContent = 'Código incorreto. Reavalie a ordem e os valores.';
+      state.code=''; renderCode(); saveState();
+    }
+    return;
+  }
+  if(/^\d$/.test(key) && state.code.length < 4) {
+    state.code += key;
+    note.className = 'notice';
+    note.textContent = 'Digite o código de 4 dígitos.';
+    renderCode(); saveState();
+  }
+}
+function openSafe() {
+  buildKeypad();
+  $('#safe-note').className='notice';
+  $('#safe-note').textContent = state.safeOpen ? 'O cofre já foi aberto.' : (state.mode==='solo' ? 'Combine a ordem correta com os valores encontrados.' : 'Use a ordem informada pelo Técnico e os valores da locadora.');
+  $('#modal-safe').classList.add('active');
+}
+
+function openEndingChoice() {
+  const body = `
+    <div class="notice success">O cofre se abriu. Dentro, há uma fita preta sem rótulo e uma chave de bloqueio.</div>
+    <div class="object-text" style="margin-top:12px;"><p>Agora vem a primeira decisão narrativa do projeto. Sua escolha altera o final do capítulo 1.</p></div>
+    <div class="ending-options">
+      <div class="ending-card"><strong>🔒 Selar o sinal</strong><br><span style="color:var(--muted)">Guardar a fita e desligar o circuito do cofre.</span><button class="btn secondary" style="margin-top:10px;" onclick="finishGame('seal')">Escolher este final</button></div>
+      <div class="ending-card"><strong>▶️ Reproduzir a fita</strong><br><span style="color:var(--muted)">Colocar a fita para tocar e descobrir o que ela contém.</span><button class="btn primary" style="margin-top:10px;" onclick="finishGame('play')">Escolher este final</button></div>
+    </div>`;
+  $('#ending-title').textContent = 'O cofre abriu';
+  $('#ending-body').innerHTML = body;
+  $('#modal-ending').classList.add('active');
+  refreshStatus();
+}
+function finishGame(kind) {
+  state.ending = kind; saveState();
+  const end = endings[kind];
+  $('#ending-title').textContent = end.title;
+  $('#ending-body').innerHTML = `<div class="object-text"><p>${end.text}</p></div><button class="btn primary" style="margin-top:14px;" onclick="closeEnding()">Concluir capítulo</button>`;
+}
+function closeEnding() { $('#modal-ending').classList.remove('active'); refreshStatus(); }
+
+function bindActions() {
+  document.body.addEventListener('click', ev => {
+    const action = ev.target.closest('[data-action]')?.dataset.action;
+    if(action) {
+      ev.preventDefault();
+      if(action==='start-solo') { setMode('solo'); state.role='investigador'; showScreen('investigator'); }
+      if(action==='goto-role-select') { showScreen('role-select'); }
+      if(action==='start-coop-investigador') { setMode('coop','investigador'); showScreen('investigator'); }
+      if(action==='start-coop-tecnico') { setMode('coop','tecnico'); showScreen('technician'); }
+      if(action==='home' || action==='back-home') { showScreen('home'); }
+      if(action==='back-role') { showScreen('role-select'); }
+      refreshStatus(); saveState();
+      return;
+    }
+    const utility = ev.target.closest('[data-open-utility]')?.dataset.openUtility;
+    if(utility) { ev.preventDefault(); openUtility(utility,false); return; }
+    const techUtility = ev.target.closest('[data-open-tech-utility]')?.dataset.openTechUtility;
+    if(techUtility) { ev.preventDefault(); openUtility(techUtility,true); return; }
+  });
+  $('#modal-close').addEventListener('click', closeModal);
+  $('#safe-close').addEventListener('click', () => $('#modal-safe').classList.remove('active'));
+  $('#ending-close').addEventListener('click', closeEnding);
+  ['modal-generic','modal-safe','modal-ending'].forEach(id => {
+    const modal = $('#'+id);
+    modal.addEventListener('click', e => { if(e.target===modal) modal.classList.remove('active'); });
+  });
+}
+
+function init() {
+  loadState();
+  setMode(state.mode || 'solo', state.role || 'investigador');
+  renderHotspots($('#overlay-investigator'), investigatorHotspots, openInvestigatorObject);
+  renderHotspots($('#overlay-technician'), techHotspots, openTechObject);
+  bindActions();
+  buildKeypad();
+  refreshStatus();
+  if(state.role==='tecnico' && state.mode==='coop') showScreen('technician');
+  else showScreen('home');
+}
+window.finishGame = finishGame;
+window.closeEnding = closeEnding;
+init();
+</script>
+
+<script>
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+  });
+}
+</script>
+
+</body>
+</html>
