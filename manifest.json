@@ -1,13 +1,13 @@
 {
   "name": "Vale Sombrio",
   "short_name": "Vale Sombrio",
-  "description": "Jogo investigativo point-and-click com modo solo e coop local.",
+  "description": "Jogo investigativo point-and-click com abertura VHS, música, modo solo e coop local.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#070b14",
-  "theme_color": "#070b14",
+  "background_color": "#05070b",
+  "theme_color": "#05070b",
   "icons": [
     {
       "src": "icon-192.png",
